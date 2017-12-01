@@ -17,6 +17,11 @@ my $chld_err;
 $chld_err = gensym(); # need to create a symbol for stderr
 
 my $pid;
+
+$SIG{TERM} = sub { my $sig = shift; if ($pid) { logger($$,'WARN',sprintf("Caught signal %s, passing it on to child pid %d",$sig,$pid)); kill $sig, $pid; }};
+$SIG{INT} = $SIG{TERM};
+$SIG{CHLD} = sub { my $sig = shift; if ($pid) { logger($$,'WARN',sprintf("Caught signal %s from child pid %d",$sig,$pid)); } };
+
 $pid = open3($chld_in, $chld_out, $chld_err, @ARGV );
 
 my $fds = { $chld_out => 'STDOUT', $chld_err => 'STDERR' };
@@ -45,7 +50,9 @@ while ($okToRun && (my @ready = $fd_select->can_read)) {
   }
 }
 
+logger($$,'INFO',sprintf "Waiting for pid %d", $pid);
 waitpid($pid,0);
+logger($$,'INFO',sprintf "Exiting");
 exit $? >> 8;
 
 sub logger {
