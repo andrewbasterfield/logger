@@ -5,6 +5,7 @@ use strict;
 use IPC::Open3;
 use IO::Select;
 use Symbol;
+use Time::HiRes qw/time/;
 
 $SIG{__DIE__} = \&Carp::croak;
 $SIG{__WARN__} = \&Carp::cluck;
@@ -61,7 +62,9 @@ sub logger {
   my @lines = @_;
   foreach my $line (map { split /\n/, $_ } @lines) {
     chomp($line);
-    my @t=localtime();
-    printf "%04d-%02d-%02d %02d:%02d:%02d [%s] %s: %s\n",$t[5]+1900,$t[4]+1,@t[3,2,1,0], $pid, $level, $line;
+    my $epoch = time;
+    my @t=localtime(int $epoch);
+    my $frac = 1000000 * ($epoch - int $epoch);
+    printf "%04d-%02d-%02d %02d:%02d:%02d.%06d [%s] %s: %s\n",$t[5]+1900,$t[4]+1,@t[3,2,1,0],$frac, $pid, $level, $line;
   }
 }
